@@ -34,6 +34,7 @@ model flow_state {
   created_at             DateTime?             @db.Timestamptz(6)
   updated_at             DateTime?             @db.Timestamptz(6)
   authentication_method  String
+  auth_code_issued_at    DateTime?             @db.Timestamptz(6)
   saml_relay_states      saml_relay_states[]
 
   @@index([created_at(sort: Desc)])
@@ -277,39 +278,58 @@ model users {
   identities                  identities[]
   mfa_factors                 mfa_factors[]
   sessions                    sessions[]
-  profiles                    profiles?
+  profiles                    profiles[]
+  activities                  activities[]
+  stamps                      stamps[]
 
   @@index([instance_id])
   @@index([is_anonymous])
   @@schema("auth")
 }
 
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model companies {
-  id          BigInt     @id @default(autoincrement())
-  updated_at  DateTime?  @default(now()) @db.Timestamptz(6)
-  companyname String?    @unique
-  licenses    Int?
-  status      String?
-  profiles    profiles[]
 
-  @@schema("public")
-}
-
-/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model profiles {
   id         String     @id @db.Uuid
-  updated_at DateTime?  @default(now()) @db.Timestamptz(6)
   username   String?    @unique
-  role       String?
-  companyid  BigInt?
-  status     String?
-  department String?
-  companies  companies? @relation(fields: [companyid], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users      users      @relation(fields: [id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@schema("public")
 }
+
+enum StampType {
+  start
+  stop
+
+  @@schema("public")
+}
+
+model activities {
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  color         String
+  name          String   @unique
+  icon          String
+  pointsPerHour Float
+  secondsFree   Int
+  user          users    @relation(references: [id], onDelete: Cascade, fields: [usersId])
+  stamps        stamps[]
+  usersId       String     @db.Uuid
+
+  @@schema("public")
+}
+
+model stamps {
+  id           String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user         users      @relation(references: [id], onDelete: Cascade, fields: [usersId])
+  time         DateTime   @default(dbgenerated("timezone('UTC', now())")) @db.Timestamptz(6)
+  type         StampType
+  activities   activities @relation(fields: [activitiesId], references: [id], onDelete: Cascade)
+  activitiesId String     @db.Uuid
+  usersId      String     @db.Uuid
+
+  @@schema("public")
+}
+
+
 
 enum aal_level {
   aal1

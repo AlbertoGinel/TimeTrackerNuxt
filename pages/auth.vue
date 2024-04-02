@@ -23,8 +23,13 @@
 
 <script setup>
 import { useProfileStore } from "#imports";
+import { useActivitiesStore } from "#imports";
+import { useStampsStore } from "#imports";
 
 const profileStore = useProfileStore();
+const activitiesStore = useActivitiesStore();
+const stampsStore = useStampsStore();
+
 const client = useSupabaseClient();
 const user = useSupabaseUser();
 
@@ -53,16 +58,16 @@ const login = async () => {
     }
 
     // If authentication succeeds, proceed to fetch user profile
-    const { data, error } = await useFetch("/api/post-get-profile", {
+    const { data, error } = await useFetch("/api/getProfile", {
       onRequest({ request, options }) {
-        options.method = "POST";
+        options.method = "GET";
         options.headers = {
           Authorization: `Bearer ${userData.accessToken}`, // Assuming accessToken is available in userData
           "Content-Type": "application/json",
         };
 
         // Set the body with user id
-        options.body = JSON.stringify({ id: userData.user.id });
+        //options.body = JSON.stringify({ id: userData.user.id });
       },
       onRequestError({ request, options, error }) {
         // Handle the request errors
@@ -70,7 +75,58 @@ const login = async () => {
       },
       async onResponse({ request, response, options }) {
         profileStore.setProfile(JSON.parse(response._data.body));
-        console.log("response: ", JSON.parse(response._data.body));
+      },
+      onResponseError({ request, response, options, error }) {
+        // Handle the response errors
+        console.error("Response error:", error);
+      },
+    });
+
+    //search for activities
+
+    const { data2, error2 } = await useFetch("/api/getActivities", {
+      onRequest({ request, options }) {
+        options.method = "GET";
+        options.headers = {
+          Authorization: `Bearer ${userData.accessToken}`, // Assuming accessToken is available in userData
+          "Content-Type": "application/json",
+        };
+
+        // Set the body with user id
+        //options.body = JSON.stringify({ id: userData.user.id });
+      },
+      onRequestError({ request, options, error }) {
+        // Handle the request errors
+        console.error("Request error:", error);
+      },
+      async onResponse({ request, response, options }) {
+        activitiesStore.setActivities(JSON.parse(response._data.body));
+      },
+      onResponseError({ request, response, options, error }) {
+        // Handle the response errors
+        console.error("Response error:", error);
+      },
+    });
+
+    //search for stamps
+
+    const { data3, error3 } = await useFetch("/api/getStamps", {
+      onRequest({ request, options }) {
+        options.method = "GET";
+        options.headers = {
+          Authorization: `Bearer ${userData.accessToken}`, // Assuming accessToken is available in userData
+          "Content-Type": "application/json",
+        };
+
+        // Set the body with user id
+        //options.body = JSON.stringify({ id: userData.user.id });
+      },
+      onRequestError({ request, options, error }) {
+        // Handle the request errors
+        console.error("Request error:", error);
+      },
+      async onResponse({ request, response, options }) {
+        stampsStore.setStamps(JSON.parse(response._data.body));
       },
       onResponseError({ request, response, options, error }) {
         // Handle the response errors
